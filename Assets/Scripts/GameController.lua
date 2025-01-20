@@ -1,7 +1,6 @@
 --!Type(Server)
 
 local PlayerTargeting = require "PlayerTargeting"
-local ZoneTraversal = require "ZoneTraversal"
 
 local NIGHT_DURATION: number = 15
 local DAY_DURATION: number = 15
@@ -9,12 +8,11 @@ local DAY_DURATION: number = 15
 type Team = "mafia" | "citizens" | "neutral"
 type Role = {role: "mafioso", team: "mafia"} | {role: "detective", team: "citizens"} | {role: "townsperson", team: "citizens"} | {role: "corpse", team: "neutral"} | {role: "observer", team: "neutral"}
 type State = {state: "waiting", elapsed: number} | {state: "night", elapsed: number} | {state: "day", elapsed: number} | {state: "gameover", winner: Team, elapsed: number}
+type SceneName = "Lobby" | "Day" | "Night"
 
 local chatChannels: {[string]: ChannelInfo} = {}
 
--- local scenes: {[string]: Scene} = {
---     LobbyScene=scene,
--- }
+local loadedScenes : {[string]: Scene?} = {Day=nil, Night=nil, Lobby=nil}
 
 local function WaitingState():State
     return {state="waiting", elapsed=0}
@@ -67,30 +65,25 @@ local function countPlayers(team:Team?): number
     return n
 end
 
--- local function sendEveryoneToScene(destScene: Scene)
---     for player in pairs(roles) do
---         server.MovePlayerToScene(player, destScene)
---     end
--- end
+function self:ServerAwake()
+    isServer = true
+    loadedScenes.Lobby = server.LoadSceneAdditive("LobbyScene")
+    loadedScenes.Day = server.LoadSceneAdditive("DayScene")
+    loadedScenes.Night = server.LoadSceneAdditive("NightScene")
+end
 
--- local function getScene(state: State): Scene
---     if state.state == "day" then
---         return scenes.DayScene
---     elseif state.state == "night" then
---         return scenes.NightScene
---     else
---         return scenes.LobbyScene
---     end
--- end
-
-local function sendEveryoneToArea(area: string)
-    assert(area, "No such area!")
-    for player in pairs(roles) do
-        ZoneTraversal.SendTo(player, area)
+local function sendEveryoneToScene(sceneName: SceneName)
+    local scene: Scene? = loadedScenes[sceneName]
+    if scene then
+        for player in pairs(roles) do
+            server.MovePlayerToScene(player, scene)
+        end
+    else
+        print("No such loaded scene: "..sceneName)
     end
 end
 
-local function getArea(state: State): string
+local function getScene(state: State): SceneName
     if state.state == "day" then
         return "Day"
     elseif state.state == "night" then
@@ -104,7 +97,7 @@ local function setState(newState: State)
     currentState = newState
     print("Game state is now: "..newState.state)
     PlayerTargeting.ClearTargets()
-    sendEveryoneToArea(getArea(currentState))
+    sendEveryoneToScene(getScene(currentState))
 end
 
 function shuffle(t) -- in-place shuffle a table
@@ -233,7 +226,7 @@ function self:Awake()
         setRole(player, {role="observer", team="neutral"})
         -- server.MovePlayerToScene(player, getScene(currentState))
         player.CharacterChanged:Connect(function(player: Player, character: Character)
-            ZoneTraversal.SendTo(player, getArea(currentState))
+            -- ZoneTraversal.SendTo(player, getArea(currentState))
         end)
     end)
 
@@ -252,7 +245,7 @@ function self:Update()
 
     if currentState.state == "waiting" then
         -- print("Waiting: "..tostring(countPlayers()))
-        if countPlayers() >= 3 then
+        if countPlayers() >= 3 and currentState.elapsed >= 3 then
             startNewGame()
         end
     elseif currentState.state == "night" then
