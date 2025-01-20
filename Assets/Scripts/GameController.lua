@@ -65,13 +65,6 @@ local function countPlayers(team:Team?): number
     return n
 end
 
-function self:ServerAwake()
-    isServer = true
-    loadedScenes.Lobby = server.LoadSceneAdditive("LobbyScene")
-    loadedScenes.Day = server.LoadSceneAdditive("DayScene")
-    loadedScenes.Night = server.LoadSceneAdditive("NightScene")
-end
-
 local function sendEveryoneToScene(sceneName: SceneName)
     local scene: Scene? = loadedScenes[sceneName]
     if scene then
@@ -218,8 +211,12 @@ function self:Awake()
     chatChannels.Mafia = Chat:CreateChannel("Mafia", true, false)
     chatChannels.Observers = Chat:CreateChannel("Observers", true, true)
 
-    -- scenes.DayScene = server.LoadSceneAdditive("DayScene")
-    -- scenes.NightScene = server.LoadSceneAdditive("NightScene")
+    loadedScenes.Lobby = server.LoadSceneAdditive("LobbyScene")
+    print("Loaded Lobby scene")
+    loadedScenes.Day = server.LoadSceneAdditive("DayScene")
+    print("Loaded Day scene")
+    loadedScenes.Night = server.LoadSceneAdditive("NightScene")
+    print("Loaded Night scene")
 
     game.PlayerConnected:Connect(function(player: Player)
         print("Player joined: "..player.name)

@@ -117,7 +117,7 @@ PrefabInstance:
     - target: {fileID: 3123393570936088168, guid: 02e42e9eb1275e44b95cb3339d6d9ebc,
         type: 3}
       propertyPath: m_Name
-      value: PlayerCharacter
+      value: CustomPlayerCharacter
       objectReference: {fileID: 0}
     - target: {fileID: 6284134043529913919, guid: 02e42e9eb1275e44b95cb3339d6d9ebc,
         type: 3}
