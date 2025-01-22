@@ -1,6 +1,8 @@
 --!Type(Server)
 
-local PlayerTargeting = require "PlayerTargeting"
+local TargetManager = require "TargetManager"
+local News = require "News"
+local Teleporter = require "Teleporter"
 
 local NIGHT_DURATION: number = 15
 local DAY_DURATION: number = 15
@@ -8,11 +10,12 @@ local DAY_DURATION: number = 15
 type Team = "mafia" | "citizens" | "neutral"
 type Role = {role: "mafioso", team: "mafia"} | {role: "detective", team: "citizens"} | {role: "townsperson", team: "citizens"} | {role: "corpse", team: "neutral"} | {role: "observer", team: "neutral"}
 type State = {state: "waiting", elapsed: number} | {state: "night", elapsed: number} | {state: "day", elapsed: number} | {state: "gameover", winner: Team, elapsed: number}
-type SceneName = "Lobby" | "Day" | "Night"
+type SceneName = "LobbyScene" | "DayScene" | "NightScene"
 
 local chatChannels: {[string]: ChannelInfo} = {}
-
-local loadedScenes : {[string]: Scene?} = {Day=nil, Night=nil, Lobby=nil}
+-- local loadedScenes : {[string]: Scene?} = {Day=nil, Night=nil, Lobby=nil}
+local playerTargets: {[Player]: Player?} = {}
+-- local currentScene: Scene? = nil
 
 local function WaitingState():State
     return {state="waiting", elapsed=0}
@@ -31,7 +34,7 @@ local currentState: State = WaitingState()
 local roles: {[Player]: Role} = {}
 
 local function setRole(player: Player, role: Role)
-    print("Player "..player.id.." assigned to role: "..role.role)
+    -- print("Player "..player.id.." assigned to role: "..role.role)
     if role.team == "citizens" then
         Chat:AddPlayerToChannel(chatChannels.Players, player)
         Chat:RemovePlayerFromChannel(chatChannels.Mafia, player)
@@ -52,7 +55,15 @@ local function setRole(player: Player, role: Role)
         Chat:RemovePlayerFromChannel(chatChannels.Detectives, player)
     end
 
+    News.UpdateClientRole(player, role.role, role.team)
+
     roles[player] = role
+
+    if role.team == "neutral" then
+        Teleporter.SendPlayerToObservationDeck(player)
+    else
+        Teleporter.SendPlayerToGameArea(player)
+    end
 end
 
 local function countPlayers(team:Team?): number
@@ -65,32 +76,41 @@ local function countPlayers(team:Team?): number
     return n
 end
 
-local function sendEveryoneToScene(sceneName: SceneName)
-    local scene: Scene? = loadedScenes[sceneName]
-    if scene then
-        for player in pairs(roles) do
-            server.MovePlayerToScene(player, scene)
-        end
-    else
-        print("No such loaded scene: "..sceneName)
-    end
-end
+-- local function sendEveryoneToScene(sceneName: SceneName)
+--     -- local scene: Scene? = loadedScenes[sceneName]
+--     currentScene = server.LoadScene(sceneName, true)
+--     if currentScene then
+--         print("Sending to scene: "..sceneName)
+--         for player in pairs(roles) do
+--             server.MovePlayerToScene(player, currentScene)
+--         end
+--     else
+--         print("No such loaded scene: "..sceneName)
+--     end
+-- end
+
 
 local function getScene(state: State): SceneName
     if state.state == "day" then
-        return "Day"
+        return "DayScene"
     elseif state.state == "night" then
-        return "Night"
+        return "NightScene"
     else
-        return "Lobby"
+        return "LobbyScene"
     end
 end
 
 local function setState(newState: State)
     currentState = newState
-    print("Game state is now: "..newState.state)
-    PlayerTargeting.ClearTargets()
-    sendEveryoneToScene(getScene(currentState))
+    -- print("Game state is now: "..newState.state)
+    playerTargets = {}
+    TargetManager.TellAllClientsToForgetTargets()
+    News.UpdateGamePhase(newState.state)
+
+    if newState.state == "gameover" then
+        News.SendNewsToAllClients("Game over! "..newState.winner:gsub("^%l", string.upper).." win!")
+    end
+    -- sendEveryoneToScene(getScene(currentState))
 end
 
 function shuffle(t) -- in-place shuffle a table
@@ -130,13 +150,14 @@ local function killPlayer(player: Player)
     -- Chat:DisplayTextMessage(playersChannel, player, "💀 "..player.name.." was killed!")
     setRole(player, {role="corpse", team="neutral"})
     -- Chat:DisplayTextMessage(observersChannel, player, "💀 "..player.name.." was killed!")
-    print(player.name.." was killed!")
+    -- print(player.name.." was killed!")
+    News.SendNewsToAllClients(player.name.." was killed!")
 end
 
 local function chooseMobJusticeVictim()
     local targetCounts: {[Player]: number} = {}
     local mostTargeted: Player? = nil
-    for p,target in pairs(PlayerTargeting.Targets) do
+    for p,target in pairs(playerTargets) do
         if roles[p].team == "citizens" or roles[p].team == "mafia" then
             targetCounts[target] = (targetCounts[target] or 0) + 1
             if mostTargeted == nil or targetCounts[target] > targetCounts[mostTargeted] then
@@ -166,7 +187,7 @@ end
 
 local function chooseMafiaVictim():Player?
     local victim: Player? = nil
-    for p,target in pairs(PlayerTargeting.Targets) do
+    for p,target in pairs(playerTargets) do
         if roles[p].team == "mafia" then
             if victim ~= nil and target ~= victim then
                 return nil -- No consensus
@@ -178,10 +199,13 @@ local function chooseMafiaVictim():Player?
 end
 
 local function finishNight()
-    for p,target in pairs(PlayerTargeting.Targets) do
+    local targets = {}
+    for p,target in pairs(playerTargets) do
+        table.insert(targets, p.name.." targeted "..target.name)
         if roles[p].role == "detective" then
             -- Chat:DisplayTextMessage(detectiveChannel, p, "🕵️ "..target.name.." is a "..roles[target].role)
-            print(p.name.." learned that "..target.name.." is a "..roles[target].role)
+            -- print(p.name.." learned that "..target.name.." is a "..roles[target].role)
+            News.SendNewsToClient(p, target.name.." is a "..roles[target].role:gsub("^%l", string.upper).."!")
         end
     end
 
@@ -204,32 +228,44 @@ local function getWinner():Team?
 end
 
 function self:Awake()
-    print("Awakened!")
-
     chatChannels.Players = Chat:CreateChannel("Players", true, true)
     chatChannels.Detectives = Chat:CreateChannel("Detectives", true, false)
     chatChannels.Mafia = Chat:CreateChannel("Mafia", true, false)
     chatChannels.Observers = Chat:CreateChannel("Observers", true, true)
 
-    loadedScenes.Lobby = server.LoadSceneAdditive("LobbyScene")
-    print("Loaded Lobby scene")
-    loadedScenes.Day = server.LoadSceneAdditive("DayScene")
-    print("Loaded Day scene")
-    loadedScenes.Night = server.LoadSceneAdditive("NightScene")
-    print("Loaded Night scene")
+    -- currentScene = server.LoadScene("LobbyScene", false)
 
     game.PlayerConnected:Connect(function(player: Player)
         print("Player joined: "..player.name)
         setRole(player, {role="observer", team="neutral"})
-        -- server.MovePlayerToScene(player, getScene(currentState))
-        player.CharacterChanged:Connect(function(player: Player, character: Character)
-            -- ZoneTraversal.SendTo(player, getArea(currentState))
+        defer(function()
+            News.UpdateGamePhaseForClient(player, currentState.state)
+            News.UpdateClientRole(player, roles[player].role, roles[player].team)
         end)
+        -- server.MovePlayerToScene(player, assert(currentScene))
     end)
 
+    -- loadedScenes.Lobby = server.LoadScene("LobbyScene", false)
+    -- print("Loaded Lobby scene")
+    -- loadedScenes.Day = server.LoadScene("DayScene", false)
+    -- print("Loaded Day scene")
+    -- loadedScenes.Night = server.LoadScene("NightScene", false)
+    -- print("Loaded Night scene")
+
     game.PlayerDisconnected:Connect(function(player: Player)
-        print("Player left: "..player.name)
+        -- print("Player left: "..player.name)
         roles[player] = nil
+    end)
+
+    TargetManager.OnClientChoseTarget(function(player: Player, target: Player?)
+        local playerRole = roles[player].role
+        if currentState.state == "day" and roles[player].team ~= "neutral" then
+            playerTargets[player] = target
+            TargetManager.TellClientToTargetPlayer(player, target)
+        elseif currentState.state == "night" and (roles[player].role == "mafioso" or roles[player].role == "detective") then
+            playerTargets[player] = target
+            TargetManager.TellClientToTargetPlayer(player, target)
+        end
     end)
 
     setState(WaitingState())
@@ -237,8 +273,6 @@ end
 
 function self:Update()
     currentState.elapsed += Time.deltaTime
-
-    -- print("State: "..currentState.state.." Elapsed: "..tostring(currentState.elapsed))
 
     if currentState.state == "waiting" then
         -- print("Waiting: "..tostring(countPlayers()))
@@ -258,6 +292,10 @@ function self:Update()
             setState(GameOverState(winner))
         elseif currentState.elapsed >= DAY_DURATION then
             finishDay()
+        end
+    elseif currentState.state == "gameover" then
+        if currentState.elapsed >= 10 then
+            setState(WaitingState())
         end
     end
 end

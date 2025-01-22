@@ -19,7 +19,7 @@ using Highrise.Lua;
 namespace Highrise.Lua.Generated
 {
     [AddComponentMenu("Lua/PlayerTargeting")]
-    [LuaRegisterType(0xcd64d2b8bbb69562, typeof(LuaBehaviour))]
+    [LuaRegisterType(0x7da34543c69f3237, typeof(LuaBehaviour))]
     public class PlayerTargeting : LuaBehaviourThunk
     {
         private const string s_scriptGUID = "b6af158ad5a68d4459dca143d86828f8";

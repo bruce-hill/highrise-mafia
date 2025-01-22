@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="UnityEngine.UIElements"
+    xmlns:hr="Highrise.UI"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi:noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd"
+>
+
+  <hr:UILuaView class="test-u-i">
+    <VisualElement class="hud-container">
+      <VisualElement class="status-info" name="statusInfo">
+        <VisualElement class="role-section">
+            <VisualElement class="role-icon" name="roleIcon"/>
+            <Label class="role-text" name="roleLabel" text="Waiting for role..."/>
+        </VisualElement>
+
+        <VisualElement class="phase-section">
+            <VisualElement class="phase-icon" name="phaseIcon"/>
+            <Label class="phase-text" name="gamePhaseLabel" text="Waiting to join..."/>
+        </VisualElement>
+
+        <Label class="instructions-text" name="instructionsLabel" text="Wait for the game to start..."/>
+      </VisualElement>
+    
+      <hr:UIScrollView class="news-feed" name="newsFeed">
+          <Label class="news-item" text="Welcome to the game!"/>
+      </hr:UIScrollView>
+    </VisualElement>
+  </hr:UILuaView>
+</UXML>
