@@ -1,5 +1,8 @@
 --!Type(Module)
 
+-- This file handles broadcasting or narrowcasting news events and general status
+-- updates to players.
+
 SetRoleEvent = Event.new("SetRole")
 NewsEvent = Event.new("News")
 SetGamePhaseEvent = Event.new("SetGamePhase")

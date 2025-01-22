@@ -1,5 +1,7 @@
 --!Type(UI)
 
+-- This file handles keeping the HUD up to date.
+
 local News = require "News"
 
 --!Bind
@@ -9,13 +11,15 @@ local instructionsLabel : Label = nil
 --!Bind
 local gamePhaseLabel : Label = nil
 --!Bind
-local phaseIcon : VisualElement = nil
---!Bind
 local roleIcon : VisualElement = nil
 --!Bind
 local newsFeed : UIScrollView = nil
 --!Bind
 local statusInfo : VisualElement = nil
+--!Bind
+local winnerPopup : VisualElement = nil
+--!Bind
+local winnerIcon : VisualElement = nil
 
 local currentRole : string
 
@@ -40,7 +44,7 @@ News.SetRoleEvent:Connect(function(role: string, team: string)
     roleIcon:EnableInClassList("role-icon-detective", role == "detective")
     roleIcon:EnableInClassList("role-icon-townsperson", role == "townsperson")
     roleIcon:EnableInClassList("role-icon-observer", role == "observer")
-    roleIcon:EnableInClassList("role-icon-ghost", role == "corpse")
+    roleIcon:EnableInClassList("role-icon-corpse", role == "corpse")
 
     statusInfo:EnableInClassList("team-mafia", team == "mafia")
     statusInfo:EnableInClassList("team-citizens", team == "citizens")
@@ -52,13 +56,28 @@ News.NewsEvent:Connect(function(news: string)
     -- roleLabel.text = news
     local newsItem: Label = Label.new()
     newsItem:AddToClassList("news-item")
+    newsItem:AddToClassList("appeared")
     newsItem.text = news
     newsFeed:Add(newsItem)
-    newsFeed:ScrollToEnd()
+
+    if news == "Game over! Mafia win!" then
+        winnerIcon:EnableInClassList("mafia-win", true)
+        winnerIcon:EnableInClassList("citizens-win", false)
+    elseif news == "Game over! Citizens win!" then
+        winnerIcon:EnableInClassList("mafia-win", false)
+        winnerIcon:EnableInClassList("citizens-win", true)
+    end
+
+    defer(function()
+        newsItem:RemoveFromClassList("appeared")
+        newsFeed:ScrollToEnd()
+    end)
 end)
 
 News.SetGamePhaseEvent:Connect(function(gamePhase: "waiting" | "day" | "night" | "gameover")
     gamePhaseLabel.text = "Phase: "..gamePhase:gsub("^%l", string.upper)
+    
+    winnerPopup:EnableInClassList("show", gamePhase == "gameover")
 
     if currentRole == "corpse" then
         instructionsLabel.text = "Wait for the game to finish"

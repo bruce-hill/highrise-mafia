@@ -1,5 +1,7 @@
 --!Type(Client)
 
+-- This file switches the floor between yellow (day) and blue (night)
+
 local News = require "News"
 
 --!SerializeField
