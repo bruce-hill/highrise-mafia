@@ -90,10 +90,10 @@ local function setState(newState: State)
     currentState = newState
     playerTargets = {}
     TargetManager.TellAllClientsToForgetTargets()
-    News.UpdateGamePhase(newState.state)
+    News.SendNewsToAllClients({type="state_changed", state=newState.state})
 
     if newState.state == "gameover" then
-        News.SendNewsToAllClients("Game over! "..newState.winner:gsub("^%l", string.upper).." win!")
+        News.SendNewsToAllClients({type="game_over", winner=newState.winner})
     end
 end
 
@@ -127,12 +127,12 @@ end
 local function startNewGame()
     randomizeRoles()
     setState(NightState())
-    News.SendNewsToAllClients("A new game has started!")
+    News.SendNewsToAllClients({type="new_game"})
 end
 
 local function killPlayer(player: Player)
     setPlayerRole(player, {role="corpse", team="neutral"})
-    News.SendNewsToAllClients(player.name.." was killed!")
+    News.SendNewsToAllClients({type="player_killed", player=player})
 end
 
 local function chooseMobJusticeVictim()
@@ -184,7 +184,7 @@ local function finishNight()
     for p,target in pairs(playerTargets) do
         table.insert(targets, p.name.." targeted "..target.name)
         if roles[p].role == "detective" then
-            News.SendNewsToClient(p, target.name.." is a "..roles[target].role:gsub("^%l", string.upper).."!")
+            News.SendNewsToClient(p, {type="role_revealed", player=target, role=roles[target].role})
         end
     end
 
@@ -214,7 +214,7 @@ function self:Awake()
 
     game.PlayerConnected:Connect(function(player: Player)
         setPlayerRole(player, {role="observer", team="neutral"})
-        News.UpdateGamePhaseForClient(player, currentState.state)
+        News.SendNewsToClient(player, {type="state_changed", state=currentState.state})
         News.UpdateClientRole(player, roles[player].role, roles[player].team)
     end)
 

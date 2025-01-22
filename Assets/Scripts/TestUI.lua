@@ -4,6 +4,9 @@
 
 local News = require "News"
 
+type NewsEvent = {type:"new_game"} | {type:"game_over", winner: "mafia" | "citizens"} | {type: "player_killed", player: Player}
+    | {type: "role_revealed", player: Player, role: string} | {type: "state_changed", state: "waiting" | "night" | "day" | "gameover"} | {type: "role_assigned", player: Player, role: string}
+
 --!Bind
 local roleLabel : Label = nil
 --!Bind
@@ -37,7 +40,6 @@ News.SetRoleEvent:Connect(function(role: string, team: string)
         instructionsLabel.text = "Wait for the next game to begin"
     elseif role == "corpse" then
         instructionsLabel.text = "Wait for the game to finish"
-        client.localPlayer.character:PlayEmote("emote-death2")
     end
 
     roleIcon:EnableInClassList("role-icon-mafioso", role == "mafioso")
@@ -51,51 +53,55 @@ News.SetRoleEvent:Connect(function(role: string, team: string)
     statusInfo:EnableInClassList("team-neutral", team == "neutral")
 end)
 
-News.NewsEvent:Connect(function(news: string)
-    print("UI detected news: "..news)
-    -- roleLabel.text = news
+local function AddNewsItem(message: string)
     local newsItem: Label = Label.new()
     newsItem:AddToClassList("news-item")
     newsItem:AddToClassList("appeared")
-    newsItem.text = news
+    newsItem.text = message
     newsFeed:Add(newsItem)
-
-    if news == "Game over! Mafia win!" then
-        winnerIcon:EnableInClassList("mafia-win", true)
-        winnerIcon:EnableInClassList("citizens-win", false)
-    elseif news == "Game over! Citizens win!" then
-        winnerIcon:EnableInClassList("mafia-win", false)
-        winnerIcon:EnableInClassList("citizens-win", true)
-    end
 
     defer(function()
         newsItem:RemoveFromClassList("appeared")
         newsFeed:ScrollToEnd()
     end)
-end)
+end
 
-News.SetGamePhaseEvent:Connect(function(gamePhase: "waiting" | "day" | "night" | "gameover")
-    gamePhaseLabel.text = "Phase: "..gamePhase:gsub("^%l", string.upper)
-    
-    winnerPopup:EnableInClassList("show", gamePhase == "gameover")
+News.NewsEvent:Connect(function(event: NewsEvent)
+    if event.type == "new_game" then
+        AddNewsItem("A new game has started!")
+    elseif event.type == "game_over" then
+        AddNewsItem("Game over! "..event.winner:gsub("^%l", string.upper).." win!")
+        winnerIcon:EnableInClassList("mafia-win", (event.winner == "mafia"))
+        winnerIcon:EnableInClassList("citizens-win", (event.winner == "citizens"))
+        winnerPopup:EnableInClassList("show", true)
+    elseif event.type == "role_revealed" then
+        AddNewsItem(event.player.name.." is a "..event.role.."!")
+    elseif event.type == "player_killed" then
+        AddNewsItem(event.player.name.." was killed!")
+        event.player.character:PlayEmote("emote-death", true)
+    elseif event.type == "state_changed" then
+        winnerPopup:EnableInClassList("show", event.state == "gameover")
 
-    if currentRole == "corpse" then
-        instructionsLabel.text = "Wait for the game to finish"
-    elseif currentRole == "observer" or not currentRole then
-        instructionsLabel.text = "Wait for the game to start"
-    elseif gamePhase == "waiting" then
-        instructionsLabel.text = "Wait for the game to start"
-    elseif gamePhase == "gameover" then
-        instructionsLabel.text = "Wait for the next game to start"
-    elseif gamePhase == "day" then
-        instructionsLabel.text = "Vote on a player to eliminate"
-    elseif gamePhase == "night" then
-        if currentRole == "mafioso" then
-            instructionsLabel.text = "Choose a player to eliminate"
-        elseif currentRole == "detective" then
-            instructionsLabel.text = "Choose a player to investigate"
-        elseif currentRole == "townsperson" then
-            instructionsLabel.text = "Wait for morning"
+        gamePhaseLabel.text = "Phase: "..event.state:gsub("^%l", string.upper)
+
+        if currentRole == "corpse" then
+            instructionsLabel.text = "Wait for the game to finish"
+        elseif currentRole == "observer" or not currentRole then
+            instructionsLabel.text = "Wait for the game to start"
+        elseif event.state == "waiting" then
+            instructionsLabel.text = "Wait for the game to start"
+        elseif event.state == "gameover" then
+            instructionsLabel.text = "Wait for the next game to start"
+        elseif event.state == "day" then
+            instructionsLabel.text = "Vote on a player to eliminate"
+        elseif event.state == "night" then
+            if currentRole == "mafioso" then
+                instructionsLabel.text = "Choose a player to eliminate"
+            elseif currentRole == "detective" then
+                instructionsLabel.text = "Choose a player to investigate"
+            elseif currentRole == "townsperson" then
+                instructionsLabel.text = "Wait for morning"
+            end
         end
     end
 end)

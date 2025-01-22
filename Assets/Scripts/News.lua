@@ -5,25 +5,18 @@
 
 SetRoleEvent = Event.new("SetRole")
 NewsEvent = Event.new("News")
-SetGamePhaseEvent = Event.new("SetGamePhase")
 
-function SendNewsToClient(player: Player, newsItem: string)
-    NewsEvent:FireClient(player, newsItem)
+type NewsEvent = {type:"new_game"} | {type:"game_over", winner: "mafia" | "citizens"} | {type: "player_killed", player: Player}
+    | {type: "role_revealed", player: Player, role: string} | {type: "state_changed", state: "waiting" | "night" | "day" | "gameover"} | {type: "role_assigned", player: Player, role: string}
+
+function SendNewsToClient(player: Player, event: NewsEvent)
+    NewsEvent:FireClient(player, event)
 end
 
-function SendNewsToAllClients(newsItem: string)
-    NewsEvent:FireAllClients(newsItem)
+function SendNewsToAllClients(event: NewsEvent)
+    NewsEvent:FireAllClients(event)
 end
 
 function UpdateClientRole(player: Player, role: string, team: string)
     SetRoleEvent:FireClient(player, role, team)
-end
-
-function UpdateGamePhase(gamePhase: "waiting" | "day" | "night" | "gameover")
-    print("Sending new game phase: "..gamePhase)
-    SetGamePhaseEvent:FireAllClients(gamePhase)
-end
-
-function UpdateGamePhaseForClient(player: Player, gamePhase: "waiting" | "day" | "night" | "gameover")
-    SetGamePhaseEvent:FireClient(player, gamePhase)
 end

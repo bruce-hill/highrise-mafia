@@ -13,10 +13,10 @@ local nightMaterial: Material = nil
 
 function self:ClientAwake()
     local floorRenderer: MeshRenderer = floor:GetComponent(MeshRenderer)
-    News.SetGamePhaseEvent:Connect(function(gamePhase: string)
-        if gamePhase == "day" then
+    News.NewsEvent:Connect(function(event)
+        if event.type == "state_changed" and event.state == "day" then
             floorRenderer:SetMaterials({dayMaterial})
-        elseif gamePhase == "night" then
+        elseif event.type == "state_changed" and event.state == "night" then
             floorRenderer:SetMaterials({nightMaterial})
         end
     end)
