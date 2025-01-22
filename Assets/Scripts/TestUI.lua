@@ -78,7 +78,7 @@ News.NewsEvent:Connect(function(event: NewsEvent)
         AddNewsItem(event.player.name.." is a "..event.role.."!")
     elseif event.type == "player_killed" then
         AddNewsItem(event.player.name.." was killed!")
-        event.player.character:PlayEmote("emote-death", true)
+        event.player.character:PlayEmote("emote-death", false)
     elseif event.type == "state_changed" then
         winnerPopup:EnableInClassList("show", event.state == "gameover")
 
