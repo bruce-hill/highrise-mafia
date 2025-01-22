@@ -128,6 +128,19 @@ local function startNewGame()
     randomizeRoles()
     setState(NightState())
     News.SendNewsToAllClients({type="new_game"})
+
+    -- Let the mafia know their teammates
+    local mafia = {}
+    for p,role in pairs(roles) do
+        if role.team == "mafia" then
+            table.insert(mafia, p)
+        end
+    end
+    for _,p1 in ipairs(mafia) do
+        for _,p2 in ipairs(mafia) do
+            News.SendNewsToClient(p1, {type="role_revealed", player=p2, role=roles[p2].role})
+        end
+    end
 end
 
 local function killPlayer(player: Player)

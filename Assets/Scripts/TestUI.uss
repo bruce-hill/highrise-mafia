@@ -60,7 +60,7 @@
 }
 
 .role-icon-observer {
-    background-image: url("project://database/Assets/Images/Roles/unassigned.png");
+    background-image: url("project://database/Assets/Images/Roles/observer.png");
 }
 
 .role-icon-corpse {
