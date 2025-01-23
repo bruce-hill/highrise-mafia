@@ -9,8 +9,8 @@ local Teleporter = require "Teleporter"
 
 local LOBBY_DURATION: number = 10
 local NIGHT_DURATION: number = 15
-local DAY_DURATION: number = 30
-local GAMEOVER_DURATION: number = 20
+local DAY_DURATION: number = 25
+local GAMEOVER_DURATION: number = 5
 
 type Team = "mafia" | "citizens" | "neutral"
 type Role = {role: "mafioso", team: "mafia"} | {role: "detective", team: "citizens"} | {role: "townsperson", team: "citizens"} | {role: "corpse", team: "neutral"} | {role: "observer", team: "neutral"}
@@ -59,6 +59,17 @@ local function setPlayerRole(player: Player, role: Role)
         Storage.UpdatePlayerValue(player, "Losses", function(losses: number)
             return (losses or 0) + 1
         end)
+    
+        -- When you die, you learn what role everyone has:
+        for p,r in pairs(roles) do
+            if p ~= player then
+                News.SendNewsToClient(player, {type="role_revealed", player=p, role=r.role})
+            end
+        end
+    end
+
+    if role.team == "neutral" then
+        News.SendNewsToAllClients({type="role_revealed", player=player, role=role.role})
     end
 end
 
@@ -100,7 +111,14 @@ local function setState(newState: State)
     currentState = newState
     playerTargets = {}
     TargetManager.TellAllClientsToForgetTargets()
+
     News.SendNewsToAllClients({type="state_changed", state=newState.state})
+
+    if newState.state == "waiting" then
+        for p in pairs(roles) do
+            setPlayerRole(p, {role="observer", team="neutral"})
+        end
+    end
 
     if newState.state == "gameover" then
         local winningPlayers = {}
@@ -112,6 +130,7 @@ local function setState(newState: State)
         News.SendNewsToAllClients({type="game_over", winningTeam=newState.winner, winningPlayers=winningPlayers})
 
         for player,role in pairs(roles) do
+            News.SendNewsToAllClients({type="role_revealed", player=player, role=role.role})
             if role.team == newState.winner then
                 Storage.UpdatePlayerValue(player, "Wins", function(wins: number)
                     return (wins or 0) + 1

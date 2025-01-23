@@ -83,7 +83,7 @@ News.NewsEvent:Connect(function(event: NewsEvent)
         end
         winnerNamesLabel.text = "Winners: "..table.concat(winningPlayerNames, ", ")
         AddNewsItem("Game over! "..event.winningTeam:gsub("^%l", string.upper).." win: "..table.concat(winningPlayerNames, ", ").."!")
-        Timer.After(5, function()
+        Timer.After(2, function()
             winnerIcon:EnableInClassList("mafia-win", (event.winningTeam == "mafia"))
             winnerIcon:EnableInClassList("citizens-win", (event.winningTeam == "citizens"))
             winnerPopup:EnableInClassList("show", true)
