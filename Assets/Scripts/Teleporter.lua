@@ -11,7 +11,7 @@ local observationDeck : GameObject = nil
 TeleportRequest = Event.new("TeleportRequest")
 
 function SendPlayerToGameArea(player: Player)
-    TeleportRequest:FireAllClients(player, "gameArea", Vector3.new(math.random(-6, 6), 0, math.random(-1, 1)))
+    TeleportRequest:FireAllClients(player, "gameArea", Vector3.new(math.random(-6, 6), 0, math.random(-2, 2)))
 end
 
 function SendPlayerToObservationDeck(player: Player)

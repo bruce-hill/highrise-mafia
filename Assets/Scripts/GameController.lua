@@ -64,6 +64,12 @@ local function setPlayerRole(player: Player, role: Role)
     else
         Teleporter.SendPlayerToGameArea(player)
     end
+
+    if role.role == "corpse" then
+        Storage.UpdatePlayerValue(player, "Losses", function(losses: number)
+            return (losses or 0) + 1
+        end)
+    end
 end
 
 local function countPlayers(team:Team?): number
@@ -94,6 +100,20 @@ local function setState(newState: State)
 
     if newState.state == "gameover" then
         News.SendNewsToAllClients({type="game_over", winner=newState.winner})
+
+        for player,role in pairs(roles) do
+            if role.team == newState.winner then
+                Storage.UpdatePlayerValue(player, "Wins", function(wins: number)
+                    return (wins or 0) + 1
+                end)
+            elseif role.team ~= newState.winner and role.team ~= "neutral" then
+                -- If a player was already killed, they lost when they died, so we only
+                -- need to update losses for surviving players.
+                Storage.UpdatePlayerValue(player, "Losses", function(losses: number)
+                    return (losses or 0) + 1
+                end)
+            end
+        end
     end
 end
 
@@ -131,9 +151,9 @@ local function startNewGame()
 
     -- Let the mafia know their teammates
     local mafia = {}
-    for p,role in pairs(roles) do
+    for player,role in pairs(roles) do
         if role.team == "mafia" then
-            table.insert(mafia, p)
+            table.insert(mafia, player)
         end
     end
     for _,p1 in ipairs(mafia) do
@@ -151,8 +171,8 @@ end
 local function chooseMobJusticeVictim()
     local targetCounts: {[Player]: number} = {}
     local mostTargeted: Player? = nil
-    for p,target in pairs(playerTargets) do
-        if roles[p].team == "citizens" or roles[p].team == "mafia" then
+    for player,target in pairs(playerTargets) do
+        if roles[player].team == "citizens" or roles[player].team == "mafia" then
             targetCounts[target] = (targetCounts[target] or 0) + 1
             if mostTargeted == nil or targetCounts[target] > targetCounts[mostTargeted] then
                 mostTargeted = target
@@ -161,8 +181,8 @@ local function chooseMobJusticeVictim()
     end
 
     if mostTargeted then
-        for p,count in pairs(targetCounts) do
-            if p ~= mostTargeted and count == targetCounts[mostTargeted] then
+        for player,count in pairs(targetCounts) do
+            if player ~= mostTargeted and count == targetCounts[mostTargeted] then
                 return nil -- It's a tie
             end
         end
@@ -181,8 +201,8 @@ end
 
 local function chooseMafiaVictim():Player?
     local victim: Player? = nil
-    for p,target in pairs(playerTargets) do
-        if roles[p].team == "mafia" then
+    for player,target in pairs(playerTargets) do
+        if roles[player].team == "mafia" then
             if victim ~= nil and target ~= victim then
                 return nil -- No consensus
             end
@@ -194,10 +214,10 @@ end
 
 local function finishNight()
     local targets = {}
-    for p,target in pairs(playerTargets) do
-        table.insert(targets, p.name.." targeted "..target.name)
-        if roles[p].role == "detective" then
-            News.SendNewsToClient(p, {type="role_revealed", player=target, role=roles[target].role})
+    for player,target in pairs(playerTargets) do
+        table.insert(targets, player.name.." targeted "..target.name)
+        if roles[player].role == "detective" then
+            News.SendNewsToClient(player, {type="role_revealed", player=target, role=roles[target].role})
         end
     end
 
@@ -210,7 +230,7 @@ local function finishNight()
 end
 
 local function getWinner():Team?
-    if countPlayers("citizens") == 0 then
+    if countPlayers("mafia") >= countPlayers("citizens") then
         return "mafia"
     elseif countPlayers("mafia") == 0 then
         return "citizens"

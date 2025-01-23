@@ -1,7 +1,16 @@
-Label {
+.simple-text-display {
+    background-color: rgba(0,0,0,0);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
     width: 100%;
     height: 100%;
-    font-size: 24px;
-    color: #FFF;
+}
+
+.label {
+    font-size: 72px;
+    color: rgba(139, 139, 139, 0.12);
     -unity-font-style: bold;
+    -unity-text-outline-width: 2px;
+    -unity-text-outline-color:rgba(0, 0, 0, .3);
 }
