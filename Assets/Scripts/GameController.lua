@@ -142,7 +142,7 @@ local function randomizeRoles()
     for p in pairs(roles) do
         table.insert(playerList, p)
     end
-    local mafiosos = math.round(#playerList/3)
+    local mafiosos = #playerList >= 6 and math.round(#playerList/3) or 1
     local detectives = #playerList > 2 and 1 or 0
     local townspeople = #playerList - mafiosos - detectives
     local toAssign: {Role} = {}
@@ -176,7 +176,7 @@ local function killPlayer(player: Player)
     News.SendNewsToAllClients({type="player_killed", player=player})
 end
 
-local function chooseMobJusticeVictim()
+local function chooseMobJusticeVictims(): {Player}
     local targetCounts: {[Player]: number} = {}
     local mostTargeted: Player? = nil
     for player,target in pairs(playerTargets) do
@@ -188,20 +188,21 @@ local function chooseMobJusticeVictim()
         end
     end
 
-    if mostTargeted then
+    local victims = {}
+    if mostTargeted and targetCounts[mostTargeted] > 1 then
         for player,count in pairs(targetCounts) do
-            if player ~= mostTargeted and count == targetCounts[mostTargeted] then
-                return nil -- It's a tie
+            if count == targetCounts[mostTargeted] then
+                table.insert(victims, player)
             end
         end
     end
-    return mostTargeted
+    return victims
 end
 
 local function finishDay()
-    local mobVictim: Player? = chooseMobJusticeVictim()
-    if mobVictim then
-        killPlayer(mobVictim)
+    local victims: {Player} = chooseMobJusticeVictims()
+    for _,victim in ipairs(victims) do
+        killPlayer(victim)
     end
 
     setState(NightState())
@@ -304,7 +305,7 @@ function self:Update()
     currentState.elapsed += Time.deltaTime
 
     if currentState.state == "waiting" then
-        if countPlayers() >= 3 and currentState.elapsed >= LOBBY_DURATION then
+        if countPlayers() >= 4 and currentState.elapsed >= LOBBY_DURATION then
             startNewGame()
         end
     elseif currentState.state == "night" then
