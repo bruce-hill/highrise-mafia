@@ -6,6 +6,7 @@ local News = require "News"
 
 type NewsEvent = {type:"new_game"} | {type:"game_over", winner: "mafia" | "citizens"} | {type: "player_killed", player: Player}
     | {type: "role_revealed", player: Player, role: string} | {type: "state_changed", state: "waiting" | "night" | "day" | "gameover"} | {type: "role_assigned", player: Player, role: string}
+    | {type: "start_countdown", duration: number}
 
 --!Bind
 local roleLabel : Label = nil
@@ -23,8 +24,11 @@ local statusInfo : VisualElement = nil
 local winnerPopup : VisualElement = nil
 --!Bind
 local winnerIcon : VisualElement = nil
+--!Bind
+local timerLabel : Label = nil
 
 local currentRole : string
+local timerCountdown : number? = nil
 
 News.SetRoleEvent:Connect(function(role: string, team: string)
     currentRole = role
@@ -108,5 +112,22 @@ News.NewsEvent:Connect(function(event: NewsEvent)
                 instructionsLabel.text = "Wait for morning"
             end
         end
+    elseif event.type == "start_countdown" then
+        timerCountdown = event.duration
     end
 end)
+
+function self:ClientUpdate()
+    if timerCountdown then
+        timerCountdown -= Time.deltaTime
+        if timerCountdown <= 0 then
+            timerCountdown = nil
+        end
+
+        if timerCountdown then
+            timerLabel.text = tostring(math.ceil(timerCountdown))
+        else
+            timerLabel.text = ""
+        end
+    end
+end

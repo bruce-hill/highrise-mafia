@@ -153,3 +153,13 @@
 .winner-icon.citizens-win {
     background-image: url("project://database/Assets/Images/citizens-win.png");
 }
+
+.timer {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    background-color: #555; 
+    color: #fff;
+    border-radius: 8px;
+    padding: 10px;
+}

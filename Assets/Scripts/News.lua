@@ -8,6 +8,7 @@ NewsEvent = Event.new("News")
 
 type NewsEvent = {type:"new_game"} | {type:"game_over", winner: "mafia" | "citizens"} | {type: "player_killed", player: Player}
     | {type: "role_revealed", player: Player, role: string} | {type: "state_changed", state: "waiting" | "night" | "day" | "gameover"} | {type: "role_assigned", player: Player, role: string}
+    | {type: "start_countdown", duration: number}
 
 function SendNewsToClient(player: Player, event: NewsEvent)
     NewsEvent:FireClient(player, event)

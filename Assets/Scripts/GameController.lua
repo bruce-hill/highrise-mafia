@@ -8,8 +8,8 @@ local News = require "News"
 local Teleporter = require "Teleporter"
 
 local LOBBY_DURATION: number = 10
-local NIGHT_DURATION: number = 20
-local DAY_DURATION: number = 20
+local NIGHT_DURATION: number = 15
+local DAY_DURATION: number = 30
 local GAMEOVER_DURATION: number = 20
 
 type Team = "mafia" | "citizens" | "neutral"
@@ -94,6 +94,20 @@ local function getScene(state: State): SceneName
     end
 end
 
+local function timeRemaining(state: State): number
+    if state.state == "gameover" then
+        return GAMEOVER_DURATION - state.elapsed
+    elseif state.state == "day" then
+        return DAY_DURATION - state.elapsed
+    elseif state.state == "night" then
+        return NIGHT_DURATION - state.elapsed
+    elseif state.state == "waiting" then
+        return LOBBY_DURATION - state.elapsed
+    else
+        error("Invalid state")
+    end
+end
+
 local function setState(newState: State)
     currentState = newState
     playerTargets = {}
@@ -117,6 +131,8 @@ local function setState(newState: State)
             end
         end
     end
+    
+    News.SendNewsToAllClients({type="start_countdown", duration=timeRemaining(newState)})
 end
 
 function shuffle(t) -- in-place shuffle a table
@@ -251,8 +267,11 @@ function self:Awake()
 
     game.PlayerConnected:Connect(function(player: Player)
         setPlayerRole(player, {role="observer", team="neutral"})
-        News.SendNewsToClient(player, {type="state_changed", state=currentState.state})
-        News.UpdateClientRole(player, roles[player].role, roles[player].team)
+        Timer.After(0.7, function()
+            News.SendNewsToClient(player, {type="state_changed", state=currentState.state})
+            News.UpdateClientRole(player, roles[player].role, roles[player].team)
+            News.SendNewsToClient(player, {type="start_countdown", duration=timeRemaining(currentState)})
+        end)
     end)
 
     game.PlayerDisconnected:Connect(function(player: Player)

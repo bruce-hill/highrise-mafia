@@ -20,6 +20,8 @@
         <Label class="news-item" text="Welcome to the game!"/>
       </hr:UIScrollView>
     </VisualElement>
+    
+    <Label class="timer" text="" name="timerLabel"/>
 
     <VisualElement class="winner-popup" name="winnerPopup">
       <VisualElement class="winner-icon" name="winnerIcon"/>
