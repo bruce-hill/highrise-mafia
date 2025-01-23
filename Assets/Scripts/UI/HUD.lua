@@ -68,6 +68,7 @@ end
 
 News.NewsEvent:Connect(function(event: NewsEvent)
     if event.type == "new_game" then
+        newsFeed:Clear()
         AddNewsItem("A new game has started!")
     elseif event.type == "game_over" then
         AddNewsItem("Game over! "..event.winner:gsub("^%l", string.upper).." win!")

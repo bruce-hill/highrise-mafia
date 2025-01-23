@@ -158,7 +158,9 @@ local function startNewGame()
     end
     for _,p1 in ipairs(mafia) do
         for _,p2 in ipairs(mafia) do
-            News.SendNewsToClient(p1, {type="role_revealed", player=p2, role=roles[p2].role})
+            if p1 ~= p2 then
+                News.SendNewsToClient(p1, {type="role_revealed", player=p2, role=roles[p2].role})
+            end
         end
     end
 end
