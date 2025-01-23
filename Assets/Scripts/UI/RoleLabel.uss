@@ -1,0 +1,50 @@
+.role-label {
+    background-color: rgba(0,0,0,0);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+
+.role {
+    font-size: 32px;
+    color: rgb(139, 139, 139);
+    -unity-font-style: bold;
+}
+
+.mafioso {
+    color: rgb(160, 64, 64);
+}
+
+.detective, .townsperson {
+    color: rgb(70, 105, 172);
+}
+.corpse, .observer {
+    color: rgb(78, 78, 78);
+}
+
+.role-icon {
+    width: 150px;
+    height: 150px;
+}
+
+.role-icon.mafioso {
+    background-image: url("project://database/Assets/Images/Roles/mafioso.jpg");
+}
+
+.role-icon.detective {
+    background-image: url("project://database/Assets/Images/Roles/detective.jpg");
+}
+
+.role-icon.townsperson {
+    background-image: url("project://database/Assets/Images/Roles/townsperson.jpg");
+}
+
+.role-icon.observer {
+    background-image: url("project://database/Assets/Images/Roles/observer.jpg");
+}
+
+.role-icon.corpse {
+    background-image: url("project://database/Assets/Images/Roles/corpse.jpg");
+}

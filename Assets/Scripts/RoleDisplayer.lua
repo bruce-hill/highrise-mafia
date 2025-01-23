@@ -5,21 +5,22 @@ local offset : Vector3 = Vector3.zero
 
 local News = require "News"
 
-type NewsEvent = {type:"new_game"} | {type:"game_over", winner: "mafia" | "citizens"} | {type: "player_killed", player: Player}
+type NewsEvent = {type:"new_game"} | {type:"game_over", winningTeam: "mafia" | "citizens", winningPlayers: {Player}} | {type: "player_killed", player: Player}
     | {type: "role_revealed", player: Player, role: string} | {type: "state_changed", state: "waiting" | "night" | "day" | "gameover"} | {type: "role_assigned", player: Player, role: string}
     | {type: "start_countdown", duration: number} | {type: "teammate_chose_target", teammate: Player, target: Player?}
 
 function self:ClientAwake()
+    HideRole()
     News.NewsEvent:Connect(function(event: NewsEvent)
         if event.type == "new_game" then
             HideRole()
         elseif event.type == "role_revealed" then
             if event.player.character == self.gameObject.transform.parent:GetComponent(Character) then
-                ShowRole(event.role)
+                -- ShowRole(event.role)
             end
         elseif event.type == "player_killed" then
             if event.player.character == self.gameObject.transform.parent:GetComponent(Character) then
-                ShowRole("corpse")
+                -- ShowRole("corpse")
             end
         end
     end)

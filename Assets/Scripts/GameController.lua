@@ -176,9 +176,9 @@ local function randomizeRoles()
 end
 
 local function startNewGame()
+    News.SendNewsToAllClients({type="new_game"})
     randomizeRoles()
     setState(DayState())
-    News.SendNewsToAllClients({type="new_game"})
 
     -- Let the mafia know their teammates
     for p1,role1 in pairs(roles) do

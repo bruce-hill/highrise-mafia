@@ -14,3 +14,14 @@
     -unity-text-outline-width: 2px;
     -unity-text-outline-color:rgba(0, 0, 0, .3);
 }
+
+.mafioso {
+    color: rgb(160, 64, 64);
+}
+
+.detective, .townsperson {
+    color: rgb(70, 105, 172);
+}
+.corpse, .observer {
+    color: rgb(78, 78, 78);
+}
