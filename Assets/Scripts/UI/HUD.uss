@@ -55,23 +55,23 @@
 }
 
 .role-icon-mafioso {
-    background-image: url("project://database/Assets/Images/Roles/mafioso.png");
+    background-image: url("project://database/Assets/Images/Roles/mafioso.jpg");
 }
 
 .role-icon-detective {
-    background-image: url("project://database/Assets/Images/Roles/detective.png");
+    background-image: url("project://database/Assets/Images/Roles/detective.jpg");
 }
 
 .role-icon-townsperson {
-    background-image: url("project://database/Assets/Images/Roles/townsperson.png");
+    background-image: url("project://database/Assets/Images/Roles/townsperson.jpg");
 }
 
 .role-icon-observer {
-    background-image: url("project://database/Assets/Images/Roles/observer.png");
+    background-image: url("project://database/Assets/Images/Roles/observer.jpg");
 }
 
 .role-icon-corpse {
-    background-image: url("project://database/Assets/Images/Roles/corpse.png");
+    background-image: url("project://database/Assets/Images/Roles/corpse.jpg");
 }
 
 .role-text {

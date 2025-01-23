@@ -83,9 +83,11 @@ News.NewsEvent:Connect(function(event: NewsEvent)
         AddNewsItem(event.player.name.." was killed!")
         event.player.character:PlayEmote("emote-death", false)
     elseif event.type == "state_changed" then
-        winnerPopup:EnableInClassList("show", event.state == "gameover")
-
         gamePhaseLabel.text = "Phase: "..event.state:gsub("^%l", string.upper)
+
+        if event.state ~= "gameover" then
+            winnerPopup:EnableInClassList("show", false)
+        end
 
         if currentRole == "corpse" then
             instructionsLabel.text = "Wait for the game to finish"
