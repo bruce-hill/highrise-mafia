@@ -7,7 +7,7 @@
     xsi:noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd"
 >
 
-  <hr:UILuaView class="test-u-i">
+  <hr:UILuaView class="hud">
     <VisualElement class="hud-container">
       <VisualElement class="status-info" name="statusInfo">
         <VisualElement class="role-icon" name="roleIcon"/>
