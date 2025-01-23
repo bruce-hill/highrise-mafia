@@ -23,7 +23,7 @@ function self:ClientAwake()
         if not player.character then
             return
         end
-        
+
         if dest == "gameArea" then
             player.character:Teleport(gameArea.transform.position + (jitter or Vector3.zero))
         elseif dest == "observationDeck" then

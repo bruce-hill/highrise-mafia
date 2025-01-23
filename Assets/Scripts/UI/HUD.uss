@@ -119,6 +119,7 @@
     margin: 0;
     margin-bottom: 4px;
     transition: background-color 1.0s ease-in-out;
+    white-space: normal;
 }
 
 .news-item.appeared {
@@ -152,6 +153,11 @@
 
 .winner-icon.citizens-win {
     background-image: url("project://database/Assets/Images/citizens-win.png");
+}
+
+.winner-names {
+    color: #FFF;
+    white-space: normal;
 }
 
 .row {

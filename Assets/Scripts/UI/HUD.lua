@@ -4,9 +4,9 @@
 
 local News = require "News"
 
-type NewsEvent = {type:"new_game"} | {type:"game_over", winner: "mafia" | "citizens"} | {type: "player_killed", player: Player}
+type NewsEvent = {type:"new_game"} | {type:"game_over", winningTeam: "mafia" | "citizens", winningPlayers: {Player}} | {type: "player_killed", player: Player}
     | {type: "role_revealed", player: Player, role: string} | {type: "state_changed", state: "waiting" | "night" | "day" | "gameover"} | {type: "role_assigned", player: Player, role: string}
-    | {type: "start_countdown", duration: number}
+    | {type: "start_countdown", duration: number} | {type: "teammate_chose_target", teammate: Player, target: Player?}
 
 --!Bind
 local roleLabel : Label = nil
@@ -24,6 +24,8 @@ local statusInfo : VisualElement = nil
 local winnerPopup : VisualElement = nil
 --!Bind
 local winnerIcon : VisualElement = nil
+--!Bind
+local winnerNamesLabel : Label = nil
 --!Bind
 local timerLabel : Label = nil
 
@@ -75,10 +77,15 @@ News.NewsEvent:Connect(function(event: NewsEvent)
         newsFeed:Clear()
         AddNewsItem("A new game has started!")
     elseif event.type == "game_over" then
-        AddNewsItem("Game over! "..event.winner:gsub("^%l", string.upper).." win!")
+        local winningPlayerNames = {}
+        for _,w in ipairs(event.winningPlayers) do
+            table.insert(winningPlayerNames, w.name)
+        end
+        winnerNamesLabel.text = "Winners: "..table.concat(winningPlayerNames, ", ")
+        AddNewsItem("Game over! "..event.winningTeam:gsub("^%l", string.upper).." win: "..table.concat(winningPlayerNames, ", ").."!")
         Timer.After(5, function()
-            winnerIcon:EnableInClassList("mafia-win", (event.winner == "mafia"))
-            winnerIcon:EnableInClassList("citizens-win", (event.winner == "citizens"))
+            winnerIcon:EnableInClassList("mafia-win", (event.winningTeam == "mafia"))
+            winnerIcon:EnableInClassList("citizens-win", (event.winningTeam == "citizens"))
             winnerPopup:EnableInClassList("show", true)
         end)
     elseif event.type == "role_revealed" then
@@ -114,6 +121,12 @@ News.NewsEvent:Connect(function(event: NewsEvent)
         end
     elseif event.type == "start_countdown" then
         timerCountdown = event.duration
+    elseif event.type == "teammate_chose_target" then
+        if event.target then
+            AddNewsItem("Your teammate "..event.teammate.name.." wants to target "..event.target.name..".")
+        else
+            AddNewsItem("Your teammate "..event.teammate.name.." doesn't want to target anyone anymore.")
+        end
     end
 end)
 

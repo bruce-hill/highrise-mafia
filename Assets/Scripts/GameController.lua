@@ -103,7 +103,13 @@ local function setState(newState: State)
     News.SendNewsToAllClients({type="state_changed", state=newState.state})
 
     if newState.state == "gameover" then
-        News.SendNewsToAllClients({type="game_over", winner=newState.winner})
+        local winningPlayers = {}
+        for p,role in pairs(roles) do
+            if role.team == newState.winner then
+                table.insert(winningPlayers, p)
+            end
+        end
+        News.SendNewsToAllClients({type="game_over", winningTeam=newState.winner, winningPlayers=winningPlayers})
 
         for player,role in pairs(roles) do
             if role.team == newState.winner then
@@ -152,21 +158,15 @@ end
 
 local function startNewGame()
     randomizeRoles()
-    setState(NightState())
+    setState(DayState())
     News.SendNewsToAllClients({type="new_game"})
 
     -- Let the mafia know their teammates
-    local mafia = {}
-    for player,role in pairs(roles) do
-        if role.team == "mafia" then
-            table.insert(mafia, player)
-        end
-    end
-    for _,p1 in ipairs(mafia) do
-        for _,p2 in ipairs(mafia) do
-            if p1 ~= p2 then
-                News.SendNewsToClient(p1, {type="role_revealed", player=p2, role=roles[p2].role})
-            end
+    for p1,role1 in pairs(roles) do
+        if role1.team ~= "mafia" then continue end
+        for p2,role2 in pairs(roles) do
+            if p2 == p1 or role2.team ~= "mafia" then continue end
+            News.SendNewsToClient(p1, {type="role_revealed", player=p2, role=roles[p2].role})
         end
     end
 end
@@ -256,6 +256,20 @@ function self:Awake()
             News.SendNewsToClient(player, {type="state_changed", state=currentState.state})
             News.UpdateClientRole(player, roles[player].role, roles[player].team)
             News.SendNewsToClient(player, {type="start_countdown", duration=timeRemaining(currentState)})
+
+            if currentState.state == "day" or currentState.state == "night" then
+                News.SendNewsToClient(player, {type="new_game"})
+            end
+
+            for p, role in pairs(roles) do
+                if p ~= player then
+                    if role.team == "neutral" then
+                        Teleporter.TeleportRequest:FireClient(player, p, "observationDeck", Vector3.new(math.random(-6, 6), 0, math.random(-1, 1)))
+                    else
+                        Teleporter.TeleportRequest:FireClient(player, p, "gameArea", Vector3.new(math.random(-6, 6), 0, math.random(-2, 2)))
+                    end
+                end
+            end
         end)
     end)
 
@@ -271,6 +285,15 @@ function self:Awake()
         elseif currentState.state == "night" and (roles[player].role == "mafioso" or roles[player].role == "detective") then
             playerTargets[player] = target
             TargetManager.TellClientToTargetPlayer(player, target)
+        end
+
+        if currentState.state == "night" and roles[player].team == "mafia" then
+            -- Mafia get to know who their teammates vote for at night
+            for other,otherRole in pairs(roles) do
+                if other ~= player and otherRole.team == "mafia" then
+                    News.SendNewsToClient(other, {type="teammate_chose_target", teammate=player, target=target})
+                end
+            end
         end
     end)
 

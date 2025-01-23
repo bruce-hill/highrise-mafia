@@ -26,6 +26,7 @@
 
     <VisualElement class="winner-popup" name="winnerPopup">
       <VisualElement class="winner-icon" name="winnerIcon"/>
+      <Label class="winner-names" name="winnerNamesLabel"/>
     </VisualElement>
   </hr:UILuaView>
 </UXML>
