@@ -9,7 +9,7 @@
 
 .role {
     font-size: 32px;
-    color: rgb(139, 139, 139);
+    color: rgb(78, 78, 78);
     -unity-font-style: bold;
 }
 
