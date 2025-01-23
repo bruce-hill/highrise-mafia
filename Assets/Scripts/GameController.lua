@@ -7,8 +7,10 @@ local TargetManager = require "TargetManager"
 local News = require "News"
 local Teleporter = require "Teleporter"
 
-local NIGHT_DURATION: number = 15
-local DAY_DURATION: number = 15
+local LOBBY_DURATION: number = 10
+local NIGHT_DURATION: number = 20
+local DAY_DURATION: number = 20
+local GAMEOVER_DURATION: number = 20
 
 type Team = "mafia" | "citizens" | "neutral"
 type Role = {role: "mafioso", team: "mafia"} | {role: "detective", team: "citizens"} | {role: "townsperson", team: "citizens"} | {role: "corpse", team: "neutral"} | {role: "observer", team: "neutral"}
@@ -275,7 +277,7 @@ function self:Update()
     currentState.elapsed += Time.deltaTime
 
     if currentState.state == "waiting" then
-        if countPlayers() >= 3 and currentState.elapsed >= 3 then
+        if countPlayers() >= 3 and currentState.elapsed >= LOBBY_DURATION then
             startNewGame()
         end
     elseif currentState.state == "night" then
@@ -293,7 +295,7 @@ function self:Update()
             finishDay()
         end
     elseif currentState.state == "gameover" then
-        if currentState.elapsed >= 1000 then
+        if currentState.elapsed >= GAMEOVER_DURATION then
             setState(WaitingState())
         end
     end

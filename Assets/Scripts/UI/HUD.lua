@@ -72,9 +72,11 @@ News.NewsEvent:Connect(function(event: NewsEvent)
         AddNewsItem("A new game has started!")
     elseif event.type == "game_over" then
         AddNewsItem("Game over! "..event.winner:gsub("^%l", string.upper).." win!")
-        winnerIcon:EnableInClassList("mafia-win", (event.winner == "mafia"))
-        winnerIcon:EnableInClassList("citizens-win", (event.winner == "citizens"))
-        winnerPopup:EnableInClassList("show", true)
+        Timer.After(5, function()
+            winnerIcon:EnableInClassList("mafia-win", (event.winner == "mafia"))
+            winnerIcon:EnableInClassList("citizens-win", (event.winner == "citizens"))
+            winnerPopup:EnableInClassList("show", true)
+        end)
     elseif event.type == "role_revealed" then
         AddNewsItem(event.player.name.." is a "..event.role.."!")
     elseif event.type == "player_killed" then
