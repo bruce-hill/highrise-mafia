@@ -17,7 +17,7 @@ type Role = {role: "mafioso", team: "mafia"} | {role: "detective", team: "citize
 type State = {state: "waiting", elapsed: number} | {state: "night", elapsed: number} | {state: "day", elapsed: number} | {state: "gameover", winner: Team, elapsed: number}
 type SceneName = "LobbyScene" | "DayScene" | "NightScene"
 
-local chatChannels: {[string]: ChannelInfo} = {}
+local playersChannel: ChannelInfo
 local playerTargets: {[Player]: Player?} = {}
 
 local function WaitingState():State
@@ -38,23 +38,11 @@ local roles: {[Player]: Role} = {}
 
 local function setPlayerRole(player: Player, role: Role)
     if role.team == "citizens" then
-        Chat:AddPlayerToChannel(chatChannels.Players, player)
-        Chat:RemovePlayerFromChannel(chatChannels.Mafia, player)
-        Chat:RemovePlayerFromChannel(chatChannels.Observers, player)
+        Chat:AddPlayerToChannel(playersChannel, player)
     elseif role.team == "mafia" then
-        Chat:AddPlayerToChannel(chatChannels.Players, player)
-        Chat:AddPlayerToChannel(chatChannels.Mafia, player)
-        Chat:RemovePlayerFromChannel(chatChannels.Observers, player)
+        Chat:AddPlayerToChannel(playersChannel, player)
     elseif role.team == "neutral" then
-        Chat:RemovePlayerFromChannel(chatChannels.Players, player)
-        Chat:RemovePlayerFromChannel(chatChannels.Mafia, player)
-        Chat:AddPlayerToChannel(chatChannels.Observers, player)
-    end
-
-    if role.role == "detective" then
-        Chat:AddPlayerToChannel(chatChannels.Detectives, player)
-    else
-        Chat:RemovePlayerFromChannel(chatChannels.Detectives, player)
+        Chat:RemovePlayerFromChannel(playersChannel, player)
     end
 
     News.UpdateClientRole(player, role.role, role.team)
@@ -260,10 +248,7 @@ local function getWinner():Team?
 end
 
 function self:Awake()
-    chatChannels.Players = Chat:CreateChannel("Players", true, true)
-    chatChannels.Detectives = Chat:CreateChannel("Detectives", true, false)
-    chatChannels.Mafia = Chat:CreateChannel("Mafia", true, false)
-    chatChannels.Observers = Chat:CreateChannel("Observers", true, true)
+    playersChannel = Chat:CreateChannel("Players", true, true)
 
     game.PlayerConnected:Connect(function(player: Player)
         setPlayerRole(player, {role="observer", team="neutral"})

@@ -12,7 +12,10 @@
       <VisualElement class="status-info" name="statusInfo">
         <VisualElement class="role-icon" name="roleIcon"/>
         <Label class="role-text" name="roleLabel" text="Waiting for role..."/>
-        <Label class="phase-text" name="gamePhaseLabel" text="Waiting to join..."/>
+        <VisualElement class="row">
+          <Label class="phase-text" name="gamePhaseLabel" text="Waiting to join..."/>
+          <Label class="timer" text="" name="timerLabel"/>
+        </VisualElement>
         <Label class="instructions-text" name="instructionsLabel" text="Wait for the game to start..."/>
       </VisualElement>
     
@@ -20,8 +23,6 @@
         <Label class="news-item" text="Welcome to the game!"/>
       </hr:UIScrollView>
     </VisualElement>
-    
-    <Label class="timer" text="" name="timerLabel"/>
 
     <VisualElement class="winner-popup" name="winnerPopup">
       <VisualElement class="winner-icon" name="winnerIcon"/>

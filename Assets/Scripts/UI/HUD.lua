@@ -125,7 +125,7 @@ function self:ClientUpdate()
         end
 
         if timerCountdown then
-            timerLabel.text = tostring(math.ceil(timerCountdown))
+            timerLabel.text = "("..tostring(math.ceil(timerCountdown))..")"
         else
             timerLabel.text = ""
         end
