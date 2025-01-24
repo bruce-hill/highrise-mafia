@@ -5,7 +5,11 @@ This repo contains an implementation of the [social deception party game "Mafia"
 The gameplay works like this:
 
 - First, wait until there are at least 4 players and a few seconds have elapsed.
-- Randomly assign players roles: townsperson, detective, or mafioso (typically 1 mafioso, 1 detective, the rest are townspeople; if there are >= 6 players, then 1/3rd of players are mafiosos).
+- Randomly assign players roles: townsperson, detective, or mafioso
+    - If there are at least 6 players, then one third of players are mafiosos (rounded); otherwise there is one mafioso.
+    - There is always one detective.
+    - All other players are townspeople.
+    - Townspeople and detectives are on the same team.
 - The clock cycles between day (yellow floor) and night (blue floor).
 - During night time:
     - Detectives can choose a character to learn what their role is
