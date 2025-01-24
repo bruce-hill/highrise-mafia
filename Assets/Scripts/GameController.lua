@@ -17,7 +17,6 @@ type Role = {role: "mafioso", team: "mafia"} | {role: "detective", team: "citize
 type State = {state: "waiting", elapsed: number} | {state: "night", elapsed: number} | {state: "day", elapsed: number} | {state: "gameover", winner: Team, elapsed: number}
 type SceneName = "LobbyScene" | "DayScene" | "NightScene"
 
-local playersChannel: ChannelInfo
 local playerTargets: {[Player]: Player?} = {}
 
 local function WaitingState():State
@@ -37,14 +36,6 @@ local currentState: State = WaitingState()
 local roles: {[Player]: Role} = {}
 
 local function setPlayerRole(player: Player, role: Role)
-    if role.team == "citizens" then
-        Chat:AddPlayerToChannel(playersChannel, player)
-    elseif role.team == "mafia" then
-        Chat:AddPlayerToChannel(playersChannel, player)
-    elseif role.team == "neutral" then
-        Chat:RemovePlayerFromChannel(playersChannel, player)
-    end
-
     News.UpdateClientRole(player, role.role, role.team)
 
     roles[player] = role
@@ -81,16 +72,6 @@ local function countPlayers(team:Team?): number
         end
     end
     return n
-end
-
-local function getScene(state: State): SceneName
-    if state.state == "day" then
-        return "DayScene"
-    elseif state.state == "night" then
-        return "NightScene"
-    else
-        return "LobbyScene"
-    end
 end
 
 local function timeRemaining(state: State): number
@@ -196,6 +177,9 @@ local function killPlayer(player: Player)
 end
 
 local function chooseMobJusticeVictims(): {Player}
+    -- When daytime ends, the player(s) with the most votes will be eliminated
+    -- as long as there are 2+ votes for that player(s). If there is a tie,
+    -- multiple players can be eliminated.
     local targetCounts: {[Player]: number} = {}
     local mostTargeted: Player? = nil
     for player,target in pairs(playerTargets) do
@@ -219,6 +203,7 @@ local function chooseMobJusticeVictims(): {Player}
 end
 
 local function finishDay()
+    -- Kill the player(s) who were voted out:
     local victims: {Player} = chooseMobJusticeVictims()
     for _,victim in ipairs(victims) do
         killPlayer(victim)
@@ -228,6 +213,7 @@ local function finishDay()
 end
 
 local function chooseMafiaVictim():Player?
+    -- If all mafia players unanimously agree on a target, return that target (otherwise nil)
     local victim: Player? = nil
     for player,target in pairs(playerTargets) do
         if roles[player].team == "mafia" then
@@ -241,6 +227,7 @@ local function chooseMafiaVictim():Player?
 end
 
 local function finishNight()
+    -- Reveal information to the detective(s) if they have a target:
     local targets = {}
     for player,target in pairs(playerTargets) do
         table.insert(targets, player.name.." targeted "..target.name)
@@ -249,6 +236,7 @@ local function finishNight()
         end
     end
 
+    -- Kill the mafia victim (if any):
     local victim: Player? = chooseMafiaVictim()
     if victim then
         killPlayer(victim)
@@ -259,8 +247,10 @@ end
 
 local function getWinner():Team?
     if countPlayers("mafia") >= countPlayers("citizens") then
+        -- If half or more surviving players are mafia, the mafia win:
         return "mafia"
     elseif countPlayers("mafia") == 0 then
+        -- If all mafia have been eliminated, the citizens win:
         return "citizens"
     else
         return nil
@@ -268,11 +258,11 @@ local function getWinner():Team?
 end
 
 function self:Awake()
-    playersChannel = Chat:CreateChannel("Players", true, true)
-
     game.PlayerConnected:Connect(function(player: Player)
         setPlayerRole(player, {role="observer", team="neutral"})
-        Timer.After(0.7, function()
+        Timer.After(1.0, function()
+            -- After a brief window to load the client scripts, let the client know
+            -- some information about the current game state.
             News.SendNewsToClient(player, {type="state_changed", state=currentState.state})
             News.UpdateClientRole(player, roles[player].role, roles[player].team)
             News.SendNewsToClient(player, {type="start_countdown", duration=timeRemaining(currentState)})
@@ -281,6 +271,10 @@ function self:Awake()
                 News.SendNewsToClient(player, {type="new_game"})
             end
 
+            -- A bit hacky, but we need the newly joined player to see all the characters in the right
+            -- area (observation deck or game area). I don't know how to get a canonical position for
+            -- each player, so for now we'll send them to a fake position in the right area. This will
+            -- get sorted out as soon as players move around or a new game round starts.
             for p, role in pairs(roles) do
                 if p ~= player then
                     if role.team == "neutral" then
@@ -300,15 +294,18 @@ function self:Awake()
     TargetManager.OnClientChoseTarget(function(player: Player, target: Player?)
         local playerRole = roles[player].role
         if currentState.state == "day" and roles[player].team ~= "neutral" then
+            -- If it's daytime, players can vote on a player to eliminate
             playerTargets[player] = target
             TargetManager.TellClientToTargetPlayer(player, target)
         elseif currentState.state == "night" and (roles[player].role == "mafioso" or roles[player].role == "detective") then
+            -- If it's nighttime, mafia and detectives can choose a target
             playerTargets[player] = target
             TargetManager.TellClientToTargetPlayer(player, target)
         end
 
         if currentState.state == "night" and roles[player].team == "mafia" then
-            -- Mafia get to know who their teammates vote for at night
+            -- When mafia choose a target at night, we inform their teammates who they picked, so it's
+            -- easier for them to coordinate on a target.
             for other,otherRole in pairs(roles) do
                 if other ~= player and otherRole.team == "mafia" then
                     News.SendNewsToClient(other, {type="teammate_chose_target", teammate=player, target=target})
@@ -324,6 +321,8 @@ function self:Update()
     currentState.elapsed += Time.deltaTime
 
     if currentState.state == "waiting" then
+        -- Wait until we have at least 4 players and allow a grace period so people have a window
+        -- of time to join the game if it's just started up:
         if countPlayers() >= 4 and currentState.elapsed >= LOBBY_DURATION then
             startNewGame()
         end
