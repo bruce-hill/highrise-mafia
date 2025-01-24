@@ -1,6 +1,7 @@
 --!Type(UI)
 
--- This file handles keeping the HUD up to date.
+-- This file handles keeping the HUD up to date with the player's role, current game phase information,
+-- and the news feed of events.
 
 local News = require "News"
 
@@ -34,7 +35,6 @@ local timerCountdown : number? = nil
 
 News.SetRoleEvent:Connect(function(role: string, team: string)
     currentRole = role
-    print("UI detected new role: "..role.." and team: "..team)
     roleLabel.text = "Role: "..role:gsub("^%l", string.upper)
     if role == "mafioso" then
         instructionsLabel.text = "Eliminate all innocent players"

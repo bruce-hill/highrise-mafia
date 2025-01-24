@@ -20,7 +20,14 @@ The gameplay works like this:
 ## Script Layout
 
 - [Scripts/GameController.lua](Assets/Scripts/GameController.lua): The main game controller that handles assigning player roles, disseminating information, moving between game phases, and so on.
+    - The game controller has most of the gameplay logic.
+    - Game state is tracked in `currentState`, which acts as a state machine using a tagged enumeration.
+    - Player roles are tracked in `roles`, which map each player to their role (mafioso, townsperson, detective, corpse, observer) and team (mafia, citizens, neutral).
+    - The game controller also handles broadcasting news events to clients when needed.
 - [Scripts/News.lua](Assets/Scripts/News.lua): A module that handles sending event updates to player clients so it can be displayed to players.
+    - The news module defines a `NewsEvent` type that specifies which types of events are sent to clients.
+    - Some events are sent to everyone (e.g. `new_game`), while others are selectively sent to some players (e.g. `role_revealed`).
+    - Various different client scripts listen for various different news events that the particular script cares about.
 - [Scripts/DayNightCycle.lua](Assets/Scripts/DayNightCycle.lua): A client script that makes the floor switch between yellow and blue for the day/night cycle.
 - [Scripts/TargetManager.lua](Assets/Scripts/TargetManager.lua): A module that governs the logic for when players click on another player to target them and displaying the target crosshairs.
 - [Scripts/Teleporter.lua](Assets/Scripts/Teleporter.lua): A module to handle teleporting players (used to move between the game area and the observation deck).

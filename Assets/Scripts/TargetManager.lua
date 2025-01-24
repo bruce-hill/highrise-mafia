@@ -1,5 +1,7 @@
 --!Type(Module)
 
+-- This script handles the logic for when players tap on another player to select them as a target.
+
 PlayerChoseTargetEvent = Event.new("PlayerChoseTarget")
 ShowTargetEvent = Event.new("ShowTarget")
 
@@ -46,8 +48,7 @@ function self:ClientAwake()
             else
                 tapHandler.Tapped:Connect(function()
                     local crosshairsRenderer: Renderer = character.gameObject.transform:Find("Crosshairs"):GetComponent(Renderer)
-                    -- Toggle targeting on tap
-                    print("Tapped on: "..player.name)
+                    -- Tapping on a player toggles targeting on/off so you can deselect a player if needed.
                     if crosshairsRenderer.enabled then
                         TellServerToTargetPlayer(nil)
                     else

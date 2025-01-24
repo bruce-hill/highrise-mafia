@@ -15,9 +15,13 @@ local GAMEOVER_DURATION: number = 5
 type Team = "mafia" | "citizens" | "neutral"
 type Role = {role: "mafioso", team: "mafia"} | {role: "detective", team: "citizens"} | {role: "townsperson", team: "citizens"} | {role: "corpse", team: "neutral"} | {role: "observer", team: "neutral"}
 type State = {state: "waiting", elapsed: number} | {state: "night", elapsed: number} | {state: "day", elapsed: number} | {state: "gameover", winner: Team, elapsed: number}
-type SceneName = "LobbyScene" | "DayScene" | "NightScene"
 
+-- Who each player is targeting (crosshairs) if anyone:
 local playerTargets: {[Player]: Player?} = {}
+
+local currentState: State = {state="waiting", elapsed=0}
+
+local roles: {[Player]: Role} = {}
 
 local function WaitingState():State
     return {state="waiting", elapsed=0}
@@ -32,9 +36,6 @@ local function GameOverState(winner:Team):State
     return {state="gameover", winner=winner, elapsed=0}
 end
 
-local currentState: State = WaitingState()
-local roles: {[Player]: Role} = {}
-
 local function setPlayerRole(player: Player, role: Role)
     News.UpdateClientRole(player, role.role, role.team)
 
@@ -47,6 +48,7 @@ local function setPlayerRole(player: Player, role: Role)
     end
 
     if role.role == "corpse" then
+        -- Dying constitutes a game loss, even if you quit before the round is over:
         Storage.UpdatePlayerValue(player, "Losses", function(losses: number)
             return (losses or 0) + 1
         end)
@@ -60,6 +62,7 @@ local function setPlayerRole(player: Player, role: Role)
     end
 
     if role.team == "neutral" then
+        -- For neutral players (corpses and observers) anyone can see their role:
         News.SendNewsToAllClients({type="role_revealed", player=player, role=role.role})
     end
 end
@@ -99,9 +102,7 @@ local function setState(newState: State)
         for p in pairs(roles) do
             setPlayerRole(p, {role="observer", team="neutral"})
         end
-    end
-
-    if newState.state == "gameover" then
+    elseif newState.state == "gameover" then
         local winningPlayers = {}
         for p,role in pairs(roles) do
             if role.team == newState.winner then
@@ -111,8 +112,10 @@ local function setState(newState: State)
         News.SendNewsToAllClients({type="game_over", winningTeam=newState.winner, winningPlayers=winningPlayers})
 
         for player,role in pairs(roles) do
+            -- All roles are revealed when the game ends:
             News.SendNewsToAllClients({type="role_revealed", player=player, role=role.role})
             if role.team == newState.winner then
+                -- Surviving to the end of a round on the winning team gains you a win:
                 Storage.UpdatePlayerValue(player, "Wins", function(wins: number)
                     return (wins or 0) + 1
                 end)

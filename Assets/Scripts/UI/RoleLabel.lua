@@ -1,5 +1,7 @@
 --!Type(UI)
 
+-- This script shows a player's username and role (if known) above their head
+
 --!Bind
 local nameLabel: Label = nil
 --!Bind
